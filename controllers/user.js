@@ -5,6 +5,10 @@ const jwt = require('jsonwebtoken');
 
 // Permet de créer un nouvel utilisateur en enregistrant son email et un mot de passe.
 exports.signup = (req, res, next) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(req.body.email)) {
+        return res.status(400).json({ error: 'Adresse email invalide !' });
+    }
     bcrypt.hash(req.body.password, 10)
         .then(hash => {
             const user = new User({
@@ -21,6 +25,10 @@ exports.signup = (req, res, next) => {
 
 // Gère l'authentification en vérifiant l'email et le mot de passe, puis génère un token JWT si l'utilisateur est valide.
 exports.login = (req, res, next) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(req.body.email)) {
+        return res.status(400).json({ error: 'Adresse email invalide !' });
+    }
     User.findOne({ email: req.body.email })
         .then(user => {
             if (!user) {

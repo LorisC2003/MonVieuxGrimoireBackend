@@ -9,6 +9,7 @@ exports.compressImages = (req) => {
 
         const fileNameWithoutExt = req.file.originalname.split('.').slice(0, -1).join('.');
         const finalName = 'images/' + fileNameWithoutExt + Date.now() + '.webp'
+
         sharp(req.file.path)
             .resize({ height: 1080 })
             .toFormat('webp')

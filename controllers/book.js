@@ -13,27 +13,33 @@ exports.createBook = async (req, res, next) => {
 
         let savedRatings = [];
         if (bookData.ratings && bookData.ratings.length > 0) {
-
             for (let ratingData of bookData.ratings) {
                 const rating = new Rating({userId: ratingData.userId, rating: ratingData.grade});
                 const savedRating = await rating.save();
                 savedRatings.push(savedRating._id);
             }
         }
+
+
         const averageRating = bookData.averageRating || (
             savedRatings.length > 0
                 ? savedRatings.reduce((sum, rating) => sum + rating.grade, 0) / savedRatings.length
                 : 0
         );
+
+
         let filename = CompressImages.compressImages(req);
+
+
         const bookItem = new Book({
             ...bookData,
-            ratings: savedRatings,  // Store the array of rating IDs
-            averageRating: averageRating,  // Calculate or use the provided average rating
+            ratings: savedRatings,
+            averageRating: averageRating,
             imageUrl: `${req.protocol}://${req.get('host')}/${filename}`
         });
 
         await bookItem.save();
+
 
         res.status(201).json({ message: 'Book successfully created!' });
     } catch (error) {
@@ -44,19 +50,9 @@ exports.createBook = async (req, res, next) => {
 
 // Récupère un livre spécifique dans la base de données en fonction de son ID.
 exports.getOneBook = (req, res, next) => {
-    Book.findOne({
-        _id: req.params.id
-    }).then(
-        (book) => {
-            res.status(200).json(book);
-        }
-    ).catch(
-        (error) => {
-            res.status(404).json({
-                error: error
-            });
-        }
-    );
+    Book.findOne({ _id: req.params.id })
+        .then((book) => res.status(200).json(book))
+        .catch((error) => res.status(404).json({ error }));
 };
 
 
@@ -67,6 +63,7 @@ exports.ratingBook = async (req, res, next) => {
         if (!book) {
             return res.status(404).json({ message: 'Book not found' });
         }
+
 
         const reviewerId = req.body.userId;
         let userFound = false;
@@ -80,22 +77,19 @@ exports.ratingBook = async (req, res, next) => {
             return;
         }
 
-
         const rating = new Rating({
             userId: req.body.userId,
             rating: req.body.rating
         });
-
         await rating.save();
-
         book.ratings.push(rating._id);
+
 
         const ratings = await Rating.find({ _id: { $in: book.ratings } });
         const totalRating = ratings.reduce((acc, curr) => acc + curr.rating, 0);
         book.averageRating = totalRating / ratings.length;
 
         await book.save();
-
         res.status(200).json(book);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -119,6 +113,7 @@ exports.modifyBook = (req, res, next) => {
             if (book.userId != req.auth.userId) {
                 res.status(401).json({ message: 'Not authorized' });
             } else {
+
                 if (req.file) {
                     const oldImagePath = book.imageUrl.split('/images/')[1];
                     fs.unlink(`images/${oldImagePath}`, (err) => {
